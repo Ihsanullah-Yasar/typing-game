@@ -1,0 +1,13 @@
+{
+  "name": "lets-type",
+  "version": "0.1.0",
+  "description": "Lets-Type — a polished typing speed racer game built with vanilla ES modules",
+  "author": "Ahsanullah Faizy <ihsanullahyasar70@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "echo Open index.html in a browser to run the game",
+    "build": "echo No build step required for this static demo"
+  },
+  "keywords": ["typing", "game", "javascript", "esmodules"],
+  "type": "module"
+}

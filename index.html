@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lets-Type — Typing Speed Racer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="site-header">
+        <h1>Lets-Type</h1>
+        <p class="tagline">Type the falling words before they hit the bottom.</p>
+      </header>
+
+      <section class="game-area" id="gameArea" aria-label="Game area">
+        <div class="sky" id="sky"></div>
+        <div class="ground" id="ground"></div>
+      </section>
+
+      <aside class="hud">
+        <div class="stat"><label>Score</label><div id="score">0</div></div>
+        <div class="stat"><label>Lives</label><div id="lives">3</div></div>
+        <div class="stat"><label>WPM</label><div id="wpm">0</div></div>
+        <button id="startBtn">Start Game</button>
+      </aside>
+
+      <section class="input-area">
+        <label for="input" class="visually-hidden">Type here</label>
+        <input id="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Start typing..." />
+      </section>
+
+      <footer class="site-footer">
+        <small>Built with vanilla JS • requestAnimationFrame • ES modules</small>
+      </footer>
+    </main>
+
+    <div id="endModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+      <div class="modal-panel">
+        <h2 id="endTitle">Game Over</h2>
+        <div class="modal-body">
+          <p>Score: <strong id="resultScore">0</strong></p>
+          <p>WPM: <strong id="resultWpm">0</strong></p>
+          <p>Words: <strong id="resultWords">0</strong></p>
+        </div>
+        <div class="modal-actions">
+          <button id="restartBtn">Restart</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
