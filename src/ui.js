@@ -1,7 +1,7 @@
-import { clamp } from './util.js';
+import { clamp } from "./util.js";
 
 export default class UI {
-  constructor(sel){
+  constructor(sel) {
     this.input = document.querySelector(sel.inputSelector);
     this.startBtn = document.querySelector(sel.startBtn);
     this.scoreEl = document.querySelector(sel.scoreEl);
@@ -15,78 +15,79 @@ export default class UI {
     this.bindEvents();
   }
 
-  bindGame(game){
+  bindGame(game) {
     this.game = game;
     // compute word fall limit when game area size known
-    const ground = document.getElementById('ground');
+    const ground = document.getElementById("ground");
     this.containerRect = this.sky.getBoundingClientRect();
     this.limitY = this.containerRect.height - 64 - 24; // ground height + padding
 
     // wire start button
-    this.startBtn.addEventListener('click', ()=>{
+    this.startBtn.addEventListener("click", () => {
       this.clearWords();
-      this.input.value = '';
+      this.input.value = "";
       this.input.focus();
       game.start();
     });
 
     // input handling
-    this.input.addEventListener('input', (e)=>{
+    this.input.addEventListener("input", (e) => {
       const v = e.target.value.trim();
-      if(!v) return;
+      if (!v) return;
       // find any active word that matches
-      for(const [id, dom] of this.words){
-        if(dom.dataset.word === v){
+      for (const [id, dom] of this.words) {
+        if (dom.dataset.word === v) {
           // success
           this.highlight(dom, true);
           this.game.scoreWord(id);
           this.removeWord({ id, word: v, miss: false });
-          this.input.value = '';
+          this.input.value = "";
           break;
         }
       }
     });
 
     // wire game end callback so UI can show results
-    if(this.game){
+    if (this.game) {
       this.game.onEnd = this.showEndModal.bind(this);
     }
 
     // restart button inside modal
-    const restartBtn = document.getElementById('restartBtn');
-    if(restartBtn){
-      restartBtn.addEventListener('click', ()=>{
+    const restartBtn = document.getElementById("restartBtn");
+    if (restartBtn) {
+      restartBtn.addEventListener("click", () => {
         this.hideEndModal();
         this.clearWords();
-        this.input.value = '';
+        this.input.value = "";
         this.input.focus();
-        if(this.game && typeof this.game.start === 'function') this.game.start();
+        if (this.game && typeof this.game.start === "function")
+          this.game.start();
       });
     }
   }
 
-  bindEvents(){
+  bindEvents() {
     // keyboard focus convenience
-    document.addEventListener('keydown', (e)=>{
-      if(e.key.length===1 || e.key === 'Backspace'){
+    document.addEventListener("keydown", (e) => {
+      if (e.key.length === 1 || e.key === "Backspace") {
         this.input.focus();
       }
     });
-    window.addEventListener('resize', ()=>{
+    window.addEventListener("resize", () => {
       this.containerRect = this.sky.getBoundingClientRect();
       this.limitY = this.containerRect.height - 64 - 24;
     });
   }
 
-  updateHUD(state){
+  updateHUD(state) {
     this.scoreEl.textContent = state.score;
     this.livesEl.textContent = state.lives;
     this.wpmEl.textContent = state.wpm;
   }
 
-  spawnWord({ id, word, x, speed }){
-    const el = document.createElement('div');
-    el.className = 'word';
+  spawnWord({ id, word, x, speed }) {
+    const el = document.createElement("div");
+    el.className = "word";
     el.textContent = word;
     el.dataset.id = id;
     el.dataset.word = word;
@@ -94,21 +95,30 @@ export default class UI {
     const container = this.sky;
     const rect = container.getBoundingClientRect();
     const padding = 12;
-    const left = Math.floor(padding + x*(rect.width - padding*2));
-    el.style.left = left + 'px';
-    el.style.top = '-40px';
+    // ensure word is fully inside container horizontally: account for element width after it's added
+    el.style.left = String(padding) + "px";
+    el.style.top = "0px";
     container.appendChild(el);
 
+    // measure element now that it's in the DOM
+    const elRect = el.getBoundingClientRect();
+    // compute left position clamped so the word doesn't overflow the container
+    const maxLeft = Math.max(0, rect.width - elRect.width - padding);
+    const computedLeft = Math.floor(
+      padding + x * (rect.width - padding * 2 - elRect.width)
+    );
+    el.style.left = Math.min(maxLeft, Math.max(0, computedLeft)) + "px";
+
     // store extra data
-    const limit = rect.height - 64 - 24; // ground / padding
+    const limit = rect.height - 64 - 24 - elRect.height; // ground / padding and account for element height
     this.words.set(id, el);
 
     // inform game about the visual limit so game logic can remove missed words too
-    try{
-      if(this.game && this.game.active && this.game.active.get(id)){
+    try {
+      if (this.game && this.game.active && this.game.active.get(id)) {
         this.game.active.get(id).limitY = limit;
       }
-    }catch(e){
+    } catch (e) {
       // non-fatal if game not yet wired
     }
 
@@ -116,29 +126,30 @@ export default class UI {
     const created = performance.now();
     const speedPx = speed; // px per second
 
-    const step = (now)=>{
-      const t = (now - created)/1000; // seconds
+    const step = (now) => {
+      const t = (now - created) / 1000; // seconds
       const y = t * speedPx;
+      // set translateY relative to the top padding of the container so words move from visible top downwards
       el.style.transform = `translateY(${y}px)`;
 
       // only fade when the word is very close to the ground so it remains readable
       const fadeZone = 80; // px
       const fadeStart = Math.max(0, limit - fadeZone);
       let opacity = 1;
-      if(y > fadeStart){
+      if (y > fadeStart) {
         const f = clamp((y - fadeStart) / fadeZone, 0, 1);
         // don't fade to zero; keep at least 30% visibility
         opacity = 1 - f * 0.7;
       }
       el.style.opacity = String(opacity);
 
-      if(y >= limit){
+      if (y >= limit) {
         // reached bottom: delegate miss handling to the game so lives/score update centrally
-        if(this.game && typeof this.game.removeWord === 'function'){
+        if (this.game && typeof this.game.removeWord === "function") {
           this.game.removeWord(id, true);
-        }else{
+        } else {
           // fallback: remove the DOM node
-          if(this.words.has(id)) this.removeWord({ id, word, miss: true });
+          if (this.words.has(id)) this.removeWord({ id, word, miss: true });
         }
         return;
       }
@@ -147,46 +158,46 @@ export default class UI {
     el._raf = requestAnimationFrame(step);
   }
 
-  removeWord({ id, word, miss }){
+  removeWord({ id, word, miss }) {
     const el = this.words.get(id);
-    if(!el) return;
+    if (!el) return;
     cancelAnimationFrame(el._raf);
     // visual feedback
-    el.classList.add(miss ? 'bad' : 'good');
-    el.style.transition = 'transform 260ms ease, opacity 260ms ease';
-    el.style.transform += ' translateY(12px) scale(0.98)';
-    el.style.opacity = '0';
-    setTimeout(()=>{
+    el.classList.add(miss ? "bad" : "good");
+    el.style.transition = "transform 260ms ease, opacity 260ms ease";
+    el.style.transform += " translateY(12px) scale(0.98)";
+    el.style.opacity = "0";
+    setTimeout(() => {
       el.remove();
     }, 300);
     this.words.delete(id);
   }
 
-  highlight(dom, success){
-    dom.classList.add(success ? 'good' : 'bad');
-    setTimeout(()=>dom.classList.remove('good','bad'), 400);
+  highlight(dom, success) {
+    dom.classList.add(success ? "good" : "bad");
+    setTimeout(() => dom.classList.remove("good", "bad"), 400);
   }
 
-  clearWords(){
-    for(const [id, el] of this.words){
+  clearWords() {
+    for (const [id, el] of this.words) {
       cancelAnimationFrame(el._raf);
       el.remove();
     }
     this.words.clear();
   }
 
-  showEndModal(summary){
-    const modal = document.getElementById('endModal');
-    if(!modal) return;
-    document.getElementById('resultScore').textContent = summary.score ?? 0;
-    document.getElementById('resultWpm').textContent = summary.wpm ?? 0;
-    document.getElementById('resultWords').textContent = summary.spawned ?? 0;
-    modal.classList.remove('hidden');
+  showEndModal(summary) {
+    const modal = document.getElementById("endModal");
+    if (!modal) return;
+    document.getElementById("resultScore").textContent = summary.score ?? 0;
+    document.getElementById("resultWpm").textContent = summary.wpm ?? 0;
+    document.getElementById("resultWords").textContent = summary.spawned ?? 0;
+    modal.classList.remove("hidden");
   }
 
-  hideEndModal(){
-    const modal = document.getElementById('endModal');
-    if(!modal) return;
-    modal.classList.add('hidden');
+  hideEndModal() {
+    const modal = document.getElementById("endModal");
+    if (!modal) return;
+    modal.classList.add("hidden");
   }
 }
