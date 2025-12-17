@@ -136,7 +136,11 @@ export default class UI {
       const fadeZone = 80; // px
       const fadeStart = Math.max(0, limit - fadeZone);
       let opacity = 1;
-      
+      if (y > fadeStart) {
+        const f = clamp((y - fadeStart) / fadeZone, 0, 1);
+        // don't fade to zero; keep at least 30% visibility
+        opacity = 1 - f * 0.7;
+      }
       el.style.opacity = String(opacity);
 
       if (y >= limit) {
