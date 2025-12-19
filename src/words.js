@@ -50,7 +50,7 @@ export default class Words {
   }
 
   random() {
-    const i = Math.floor(Math.random());
+    const i = Math.floor(Math.random() * this.list.length);
     return this.list[i];
   }
 }
